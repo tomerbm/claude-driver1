@@ -205,6 +205,24 @@ input  { font: inherit; }
   margin-bottom: 4px;
 }
 
+.route-list__header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-optimize {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: #eef2ff;
+  color: var(--primary);
+  border: 1px solid #c7d2fe;
+  transition: background 0.15s;
+}
+.btn-optimize:hover { background: #e0e7ff; }
+
 .route-progress {
   font-size: 13px;
   font-weight: 600;

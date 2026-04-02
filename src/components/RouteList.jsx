@@ -93,7 +93,7 @@ function GripIcon() {
   );
 }
 
-export default function RouteList({ stops, activeIndex, onReorder, onSelect, onStatusChange }) {
+export default function RouteList({ stops, activeIndex, onReorder, onSelect, onStatusChange, onOptimize }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   function handleDragEnd(event) {
@@ -121,7 +121,12 @@ export default function RouteList({ stops, activeIndex, onReorder, onSelect, onS
     <div className="route-list">
       <div className="route-list__header">
         <h2 className="panel-title">Route</h2>
-        <span className="route-progress">{done}/{stops.length} done</span>
+        <div className="route-list__header-right">
+          <span className="route-progress">{done}/{stops.length} done</span>
+          <button className="btn-optimize" onClick={onOptimize} title="Re-optimize route">
+            ⚡ Optimize
+          </button>
+        </div>
       </div>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={stops.map((s) => s.id)} strategy={verticalListSortingStrategy}>

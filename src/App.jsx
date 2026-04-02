@@ -4,6 +4,7 @@ import RouteMap from "./components/RouteMap";
 import RouteList from "./components/RouteList";
 import Toast from "./components/Toast";
 import { PACKAGE_DB, STATUS, STATUS_LABEL } from "./data/packages";
+import { nearestNeighbor, totalDistance } from "./utils/routeOptimizer";
 import "leaflet/dist/leaflet.css";
 import "./App.css";
 
@@ -30,10 +31,14 @@ export default function App() {
     const newStop = { ...pkg, status: STATUS.PENDING, statusLabel: STATUS_LABEL[STATUS.PENDING] };
     setStops((prev) => {
       const updated = [...prev, newStop];
-      setActiveIndex(updated.length - 1);
-      return updated;
+      // Re-optimize: start from first stop's coords (or new stop if first)
+      const startCoord = updated[0].coords;
+      const optimized = nearestNeighbor(updated, startCoord);
+      const km = totalDistance(optimized).toFixed(1);
+      setActiveIndex(optimized.findIndex((s) => s.id === newStop.id));
+      showToast(`Added: ${pkg.recipient} — route optimized (${km} km)`, "success");
+      return optimized;
     });
-    showToast(`Added: ${pkg.recipient} — ${pkg.address}`, "success");
     setView("map");
   }, [stops]);
 
@@ -51,6 +56,15 @@ export default function App() {
   const handleReorder = useCallback((reordered) => {
     setStops(reordered);
   }, []);
+
+  const handleOptimize = useCallback(() => {
+    if (stops.length < 2) return;
+    const startCoord = stops[0].coords;
+    const optimized = nearestNeighbor(stops, startCoord);
+    const km = totalDistance(optimized).toFixed(1);
+    setStops(optimized);
+    showToast(`Route optimized — ${km} km total`, "success");
+  }, [stops]);
 
   const handleSelectStop = useCallback((idx) => {
     setActiveIndex(idx);
@@ -118,6 +132,7 @@ export default function App() {
               onReorder={handleReorder}
               onSelect={handleSelectStop}
               onStatusChange={handleStatusChange}
+              onOptimize={handleOptimize}
             />
           </div>
         )}
