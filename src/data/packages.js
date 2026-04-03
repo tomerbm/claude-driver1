@@ -45,6 +45,24 @@ export const PACKAGE_DB = {
     weight: "3.4 ק\"ג",
     notes: "שביר",
   },
+  "65043278": {
+    id: "65043278",
+    recipient: "תומר בן משה",
+    address: "יא באדר 5",
+    city: "חולון",
+    coords: { lat: 32.0228, lng: 34.7812 },
+    weight: "",
+    notes: "",
+  },
+  "HZ14074242": {
+    id: "HZ14074242",
+    recipient: "רבקה עוזרי",
+    address: "סעדיה הגאון 11",
+    city: "חולון",
+    coords: { lat: 32.0102, lng: 34.7758 },
+    weight: "",
+    notes: "",
+  },
 };
 
 export const STATUS = {
