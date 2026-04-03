@@ -58,20 +58,22 @@ async function fetchRoadGeometry(stops) {
 export default function RouteMap({ stops, activeIndex, onSelectStop }) {
   const [roadPath, setRoadPath] = useState([]);
 
-  // Re-fetch road geometry whenever stop order or set changes
+  // Only route through stops that haven't been delivered yet
+  const routeStops = stops.filter((s) => s.status !== STATUS.DELIVERED);
+
+  // Re-fetch road geometry whenever route stops change
   useEffect(() => {
-    if (stops.length < 2) {
+    if (routeStops.length < 2) {
       setRoadPath([]);
       return;
     }
-    const stopKey = stops.map((s) => s.id).join(",");
     let cancelled = false;
 
     const timer = setTimeout(async () => {
-      const path = await fetchRoadGeometry(stops);
+      const path = await fetchRoadGeometry(routeStops);
       if (!cancelled) {
         // Fall back to straight lines if OSRM fails
-        setRoadPath(path ?? stops.map((s) => [s.coords.lat, s.coords.lng]));
+        setRoadPath(path ?? routeStops.map((s) => [s.coords.lat, s.coords.lng]));
       }
     }, 400); // debounce — don't spam OSRM while scanning rapidly
 
@@ -79,7 +81,7 @@ export default function RouteMap({ stops, activeIndex, onSelectStop }) {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [stops.map((s) => s.id).join(",")]);
+  }, [routeStops.map((s) => s.id).join(",")]);
 
   const center =
     stops.length > 0
