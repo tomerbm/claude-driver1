@@ -12,7 +12,7 @@ export default function App() {
   const [stops, setStops] = useState([]);
   const [activeIndex, setActiveIndex] = useState(null);
   const [toast, setToast] = useState(null);
-  const [view, setView] = useState("map"); // "map" | "scanner" | "list"
+  const [view, setView] = useState("map");
 
   const showToast = (message, type = "info") => {
     setToast({ message, type, key: Date.now() });
@@ -31,7 +31,7 @@ export default function App() {
     const newStop = { ...pkg, status: STATUS.PENDING, statusLabel: STATUS_LABEL[STATUS.PENDING] };
     setStops((prev) => {
       const updated = [...prev, newStop];
-      // Re-optimize: start from first stop's coords (or new stop if first)
+      // Re-optimize after every scan
       const startCoord = updated[0].coords;
       const optimized = nearestNeighbor(updated, startCoord);
       const km = totalDistance(optimized).toFixed(1);
@@ -53,10 +53,17 @@ export default function App() {
     showToast(`Status updated to "${STATUS_LABEL[newStatus]}"`, "success");
   }, []);
 
+  // Drag-and-drop reorder — map pin numbers update automatically
   const handleReorder = useCallback((reordered) => {
     setStops(reordered);
   }, []);
 
+  const handleSelectStop = useCallback((idx) => {
+    setActiveIndex(idx);
+    setView("map");
+  }, []);
+
+  // Manual re-optimize button in route list
   const handleOptimize = useCallback(() => {
     if (stops.length < 2) return;
     const startCoord = stops[0].coords;
@@ -66,14 +73,8 @@ export default function App() {
     showToast(`Route optimized — ${km} km total`, "success");
   }, [stops]);
 
-  const handleSelectStop = useCallback((idx) => {
-    setActiveIndex(idx);
-    setView("map");
-  }, []);
-
   return (
     <div className="app">
-      {/* Header */}
       <header className="header">
         <div className="header__logo">
           <TruckIcon />
@@ -101,7 +102,6 @@ export default function App() {
         </nav>
       </header>
 
-      {/* Main content */}
       <main className="main">
         {view === "scanner" && (
           <div className="panel">
@@ -138,7 +138,6 @@ export default function App() {
         )}
       </main>
 
-      {/* Toast */}
       {toast && (
         <Toast
           key={toast.key}

@@ -1,7 +1,7 @@
+import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import { STATUS_COLOR, STATUS } from "../data/packages";
-import { useEffect } from "react";
 
 // Fix default marker icon paths broken by Vite bundling
 delete L.Icon.Default.prototype._getIconUrl;
@@ -34,16 +34,57 @@ function FitBounds({ stops }) {
     if (stops.length === 0) return;
     const bounds = L.latLngBounds(stops.map((s) => [s.coords.lat, s.coords.lng]));
     map.fitBounds(bounds, { padding: [60, 60] });
-  }, [stops]);
+  }, [stops.map(s => s.id).join(",")]);
   return null;
 }
 
-export default function RouteMap({ stops, activeIndex, onSelectStop }) {
-  const center = stops.length > 0
-    ? [stops[0].coords.lat, stops[0].coords.lng]
-    : [40.73, -73.99];
+// Fetch actual road geometry from OSRM (free, no API key needed)
+async function fetchRoadGeometry(stops) {
+  if (stops.length < 2) return null;
+  const coords = stops.map((s) => `${s.coords.lng},${s.coords.lat}`).join(";");
+  const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.code !== "Ok" || !data.routes?.[0]) return null;
+    // OSRM returns [lng, lat]; Leaflet needs [lat, lng]
+    return data.routes[0].geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+  } catch {
+    return null;
+  }
+}
 
-  const polylinePoints = stops.map((s) => [s.coords.lat, s.coords.lng]);
+export default function RouteMap({ stops, activeIndex, onSelectStop }) {
+  const [roadPath, setRoadPath] = useState([]);
+
+  // Re-fetch road geometry whenever stop order or set changes
+  useEffect(() => {
+    if (stops.length < 2) {
+      setRoadPath([]);
+      return;
+    }
+    const stopKey = stops.map((s) => s.id).join(",");
+    let cancelled = false;
+
+    const timer = setTimeout(async () => {
+      const path = await fetchRoadGeometry(stops);
+      if (!cancelled) {
+        // Fall back to straight lines if OSRM fails
+        setRoadPath(path ?? stops.map((s) => [s.coords.lat, s.coords.lng]));
+      }
+    }, 400); // debounce — don't spam OSRM while scanning rapidly
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [stops.map((s) => s.id).join(",")]);
+
+  const center =
+    stops.length > 0
+      ? [stops[0].coords.lat, stops[0].coords.lng]
+      : [40.73, -73.99];
 
   return (
     <MapContainer center={center} zoom={13} className="map-container">
@@ -51,15 +92,23 @@ export default function RouteMap({ stops, activeIndex, onSelectStop }) {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      {stops.length > 1 && (
-        <Polyline positions={polylinePoints} color="#6366f1" weight={3} dashArray="8 6" />
+
+      {/* Real road route */}
+      {roadPath.length > 1 && (
+        <Polyline positions={roadPath} color="#6366f1" weight={4} opacity={0.75} />
       )}
+
+      {/* Numbered markers — index reflects current order (updates on reorder) */}
       {stops.map((stop, idx) => (
         <Marker
           key={stop.id}
           position={[stop.coords.lat, stop.coords.lng]}
-          icon={makeIcon(STATUS_COLOR[stop.status] || STATUS_COLOR[STATUS.PENDING], idx + 1)}
+          icon={makeIcon(
+            STATUS_COLOR[stop.status] || STATUS_COLOR[STATUS.PENDING],
+            idx + 1
+          )}
           eventHandlers={{ click: () => onSelectStop(idx) }}
+          zIndexOffset={idx === activeIndex ? 1000 : 0}
         >
           <Popup>
             <div className="popup">
@@ -73,6 +122,7 @@ export default function RouteMap({ stops, activeIndex, onSelectStop }) {
           </Popup>
         </Marker>
       ))}
+
       {stops.length > 0 && <FitBounds stops={stops} />}
     </MapContainer>
   );

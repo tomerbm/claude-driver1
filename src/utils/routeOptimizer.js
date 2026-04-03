@@ -17,9 +17,7 @@ function haversine(a, b) {
 
 /**
  * Nearest-neighbor heuristic for TSP.
- *
- * Starting from `startCoord` (e.g. driver's current position, or the coords
- * of the first stop), repeatedly visit the closest unvisited stop.
+ * Starts from startCoord and repeatedly visits the closest unvisited stop.
  *
  * @param {Array}  stops      — array of stop objects with a `coords: {lat, lng}` field
  * @param {Object} startCoord — {lat, lng} starting position

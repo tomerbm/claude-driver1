@@ -57,23 +57,17 @@ function StopCard({ stop, index, isActive, onSelect, onStatusChange }) {
             className={`status-btn delivered ${stop.status === STATUS.DELIVERED ? "active" : ""}`}
             onClick={() => onStatusChange(stop.id, STATUS.DELIVERED)}
             title="Delivered"
-          >
-            ✓
-          </button>
+          >✓</button>
           <button
             className={`status-btn no-one-home ${stop.status === STATUS.NO_ONE_HOME ? "active" : ""}`}
             onClick={() => onStatusChange(stop.id, STATUS.NO_ONE_HOME)}
             title="No One Home"
-          >
-            🏠
-          </button>
+          >🏠</button>
           <button
             className={`status-btn return ${stop.status === STATUS.RETURN ? "active" : ""}`}
             onClick={() => onStatusChange(stop.id, STATUS.RETURN)}
             title="Return"
-          >
-            ↩
-          </button>
+          >↩</button>
         </div>
       </div>
     </div>
