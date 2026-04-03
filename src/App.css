@@ -78,6 +78,17 @@ input  { font: inherit; }
 .nav-btn:hover    { background: var(--bg); color: var(--text); }
 .nav-btn--active  { background: #eef2ff; color: var(--primary); }
 
+.lang-toggle {
+  font-weight: 700;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 10px;
+  color: var(--text-muted);
+  margin-inline-start: 4px;
+}
+.lang-toggle:hover { background: var(--bg); color: var(--text); }
+
 /* ===== Main ===== */
 .main {
   flex: 1;

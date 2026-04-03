@@ -12,7 +12,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { STATUS, STATUS_COLOR, STATUS_LABEL } from "../data/packages";
+import { STATUS, STATUS_COLOR } from "../data/packages";
 
 function StopCard({ stop, index, isActive, onSelect, onStatusChange }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
@@ -50,7 +50,7 @@ function StopCard({ stop, index, isActive, onSelect, onStatusChange }) {
 
       <div className="stop-card__actions" onClick={(e) => e.stopPropagation()}>
         <div className="status-badge" style={{ background: statusColor }}>
-          {STATUS_LABEL[stop.status]}
+          {stop.statusLabel}
         </div>
         <div className="status-buttons">
           <button
@@ -87,7 +87,7 @@ function GripIcon() {
   );
 }
 
-export default function RouteList({ stops, activeIndex, onReorder, onSelect, onStatusChange, onOptimize }) {
+export default function RouteList({ t, stops, activeIndex, onReorder, onSelect, onStatusChange, onOptimize }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   function handleDragEnd(event) {
@@ -102,9 +102,7 @@ export default function RouteList({ stops, activeIndex, onReorder, onSelect, onS
   if (stops.length === 0) {
     return (
       <div className="route-list">
-        <div className="route-list__empty">
-          No packages added yet. Scan a barcode to get started.
-        </div>
+        <div className="route-list__empty">{t.routeEmpty}</div>
       </div>
     );
   }
@@ -114,11 +112,11 @@ export default function RouteList({ stops, activeIndex, onReorder, onSelect, onS
   return (
     <div className="route-list">
       <div className="route-list__header">
-        <h2 className="panel-title">Route</h2>
+        <h2 className="panel-title">{t.routeTitle}</h2>
         <div className="route-list__header-right">
-          <span className="route-progress">{done}/{stops.length} done</span>
+          <span className="route-progress">{done}/{stops.length} {t.done}</span>
           <button className="btn-optimize" onClick={onOptimize} title="Re-optimize route">
-            ⚡ Optimize
+            {t.optimize}
           </button>
         </div>
       </div>

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 
-export default function BarcodeScanner({ onScan, onError }) {
+export default function BarcodeScanner({ t, onScan, onError }) {
   const [active, setActive] = useState(false);
   const [manualCode, setManualCode] = useState("");
   const scannerRef = useRef(null);
@@ -14,14 +14,12 @@ export default function BarcodeScanner({ onScan, onError }) {
       await html5QrCode.start(
         { facingMode: "environment" },
         { fps: 10, qrbox: { width: 250, height: 150 } },
-        (decodedText) => {
-          onScan(decodedText.trim());
-        },
-        () => {} // ignore verbose scan errors
+        (decodedText) => { onScan(decodedText.trim()); },
+        () => {}
       );
       setActive(true);
     } catch (err) {
-      onError?.("Camera not available: " + err.message);
+      onError?.(err.message);
     }
   };
 
@@ -36,11 +34,7 @@ export default function BarcodeScanner({ onScan, onError }) {
     setActive(false);
   };
 
-  useEffect(() => {
-    return () => {
-      stopScanner();
-    };
-  }, []);
+  useEffect(() => { return () => { stopScanner(); }; }, []);
 
   const handleManual = (e) => {
     e.preventDefault();
@@ -52,35 +46,26 @@ export default function BarcodeScanner({ onScan, onError }) {
 
   return (
     <div className="scanner-panel">
-      <h2 className="panel-title">Scan Package</h2>
-
+      <h2 className="panel-title">{t.scanTitle}</h2>
       <div id={divId} className={active ? "qr-box active" : "qr-box"} />
-
       <div className="scanner-controls">
         {!active ? (
-          <button className="btn btn-primary" onClick={startScanner}>
-            Start Camera
-          </button>
+          <button className="btn btn-primary" onClick={startScanner}>{t.startCamera}</button>
         ) : (
-          <button className="btn btn-secondary" onClick={stopScanner}>
-            Stop Camera
-          </button>
+          <button className="btn btn-secondary" onClick={stopScanner}>{t.stopCamera}</button>
         )}
       </div>
-
       <div className="manual-entry">
-        <span className="divider-label">or enter barcode manually</span>
+        <span className="divider-label">{t.manualLabel}</span>
         <form onSubmit={handleManual} className="manual-form">
           <input
             className="input"
             type="text"
-            placeholder="e.g. PKG-001"
+            placeholder={t.manualPlaceholder}
             value={manualCode}
             onChange={(e) => setManualCode(e.target.value)}
           />
-          <button className="btn btn-primary" type="submit">
-            Add
-          </button>
+          <button className="btn btn-primary" type="submit">{t.manualAdd}</button>
         </form>
       </div>
     </div>

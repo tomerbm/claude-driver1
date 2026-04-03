@@ -5,6 +5,7 @@ import RouteList from "./components/RouteList";
 import Toast from "./components/Toast";
 import { PACKAGE_DB, STATUS, STATUS_LABEL } from "./data/packages";
 import { nearestNeighbor, totalDistance } from "./utils/routeOptimizer";
+import { STRINGS } from "./i18n";
 import "leaflet/dist/leaflet.css";
 import "./App.css";
 
@@ -13,6 +14,10 @@ export default function App() {
   const [activeIndex, setActiveIndex] = useState(null);
   const [toast, setToast] = useState(null);
   const [view, setView] = useState("map");
+  const [lang, setLang] = useState("he"); // default Hebrew since addresses are Israeli
+
+  const t = STRINGS[lang];
+  const statusLabel = STATUS_LABEL[lang];
 
   const showToast = (message, type = "info") => {
     setToast({ message, type, key: Date.now() });
@@ -20,40 +25,38 @@ export default function App() {
 
   const handleScan = useCallback((barcode) => {
     if (stops.find((s) => s.id === barcode)) {
-      showToast(`Package ${barcode} is already in the route.`, "warning");
+      showToast(t.alreadyInRoute(barcode), "warning");
       return;
     }
     const pkg = PACKAGE_DB[barcode];
     if (!pkg) {
-      showToast(`Unknown barcode: ${barcode}`, "error");
+      showToast(t.unknownBarcode(barcode), "error");
       return;
     }
-    const newStop = { ...pkg, status: STATUS.PENDING, statusLabel: STATUS_LABEL[STATUS.PENDING] };
+    const newStop = { ...pkg, status: STATUS.PENDING, statusLabel: statusLabel[STATUS.PENDING] };
     setStops((prev) => {
       const updated = [...prev, newStop];
-      // Re-optimize after every scan
       const startCoord = updated[0].coords;
       const optimized = nearestNeighbor(updated, startCoord);
       const km = totalDistance(optimized).toFixed(1);
       setActiveIndex(optimized.findIndex((s) => s.id === newStop.id));
-      showToast(`Added: ${pkg.recipient} — route optimized (${km} km)`, "success");
+      showToast(t.added(pkg.recipient, km), "success");
       return optimized;
     });
     setView("map");
-  }, [stops]);
+  }, [stops, t, statusLabel]);
 
   const handleStatusChange = useCallback((id, newStatus) => {
     setStops((prev) =>
       prev.map((s) =>
         s.id === id
-          ? { ...s, status: newStatus, statusLabel: STATUS_LABEL[newStatus] }
+          ? { ...s, status: newStatus, statusLabel: statusLabel[newStatus] }
           : s
       )
     );
-    showToast(`Status updated to "${STATUS_LABEL[newStatus]}"`, "success");
-  }, []);
+    showToast(t.statusUpdated(statusLabel[newStatus]), "success");
+  }, [t, statusLabel]);
 
-  // Drag-and-drop reorder — map pin numbers update automatically
   const handleReorder = useCallback((reordered) => {
     setStops(reordered);
   }, []);
@@ -63,41 +66,53 @@ export default function App() {
     setView("map");
   }, []);
 
-  // Manual re-optimize button in route list
   const handleOptimize = useCallback(() => {
     if (stops.length < 2) return;
     const startCoord = stops[0].coords;
     const optimized = nearestNeighbor(stops, startCoord);
     const km = totalDistance(optimized).toFixed(1);
     setStops(optimized);
-    showToast(`Route optimized — ${km} km total`, "success");
-  }, [stops]);
+    showToast(t.optimized(km), "success");
+  }, [stops, t]);
+
+  // Sync statusLabel text when language changes
+  const handleLangToggle = useCallback(() => {
+    const next = lang === "en" ? "he" : "en";
+    const nextLabel = STATUS_LABEL[next];
+    setStops((prev) => prev.map((s) => ({ ...s, statusLabel: nextLabel[s.status] })));
+    setLang(next);
+  }, [lang]);
+
+  const isRtl = lang === "he";
 
   return (
-    <div className="app">
+    <div className="app" dir={isRtl ? "rtl" : "ltr"}>
       <header className="header">
         <div className="header__logo">
           <TruckIcon />
-          <span>Driver Route</span>
+          <span>{t.appTitle}</span>
         </div>
         <nav className="header__nav">
           <button
             className={`nav-btn ${view === "scanner" ? "nav-btn--active" : ""}`}
             onClick={() => setView("scanner")}
           >
-            <ScanIcon /> Scan
+            <ScanIcon /> {t.navScan}
           </button>
           <button
             className={`nav-btn ${view === "map" ? "nav-btn--active" : ""}`}
             onClick={() => setView("map")}
           >
-            <MapIcon /> Map
+            <MapIcon /> {t.navMap}
           </button>
           <button
             className={`nav-btn ${view === "list" ? "nav-btn--active" : ""}`}
             onClick={() => setView("list")}
           >
-            <ListIcon /> Route ({stops.length})
+            <ListIcon /> {t.navRoute} ({stops.length})
+          </button>
+          <button className="nav-btn lang-toggle" onClick={handleLangToggle}>
+            {lang === "en" ? "עב" : "EN"}
           </button>
         </nav>
       </header>
@@ -105,7 +120,11 @@ export default function App() {
       <main className="main">
         {view === "scanner" && (
           <div className="panel">
-            <BarcodeScanner onScan={handleScan} onError={(msg) => showToast(msg, "error")} />
+            <BarcodeScanner
+              t={t}
+              onScan={handleScan}
+              onError={(msg) => showToast(t.cameraError(msg), "error")}
+            />
           </div>
         )}
 
@@ -117,9 +136,7 @@ export default function App() {
               onSelectStop={handleSelectStop}
             />
             {stops.length === 0 && (
-              <div className="map-overlay-hint">
-                Scan barcodes to add delivery stops to your route
-              </div>
+              <div className="map-overlay-hint">{t.mapHint}</div>
             )}
           </div>
         )}
@@ -127,6 +144,7 @@ export default function App() {
         {view === "list" && (
           <div className="panel">
             <RouteList
+              t={t}
               stops={stops}
               activeIndex={activeIndex}
               onReorder={handleReorder}
