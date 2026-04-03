@@ -6,6 +6,7 @@ import Toast from "./components/Toast";
 import { PACKAGE_DB, STATUS, STATUS_LABEL } from "./data/packages";
 import { nearestNeighbor, totalDistance } from "./utils/routeOptimizer";
 import { STRINGS } from "./i18n";
+import { playSuccess, playError } from "./utils/sounds";
 import "leaflet/dist/leaflet.css";
 import "./App.css";
 
@@ -25,14 +26,17 @@ export default function App() {
 
   const handleScan = useCallback((barcode) => {
     if (stops.find((s) => s.id === barcode)) {
+      playError();
       showToast(t.alreadyInRoute(barcode), "warning");
       return;
     }
     const pkg = PACKAGE_DB[barcode];
     if (!pkg) {
+      playError();
       showToast(t.unknownBarcode(barcode), "error");
       return;
     }
+    playSuccess();
     const newStop = { ...pkg, status: STATUS.PENDING, statusLabel: statusLabel[STATUS.PENDING] };
     setStops((prev) => {
       const updated = [...prev, newStop];
